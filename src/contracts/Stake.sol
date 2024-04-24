@@ -50,10 +50,8 @@ contract Stake is Ownable, Multicall3, IStake, ReentrancyGuard {
 
         if (_user.capital > 0) {
             _stakeRepeat(msg.value, _pId, msg.sender);
-            // update rpd and cpd
         }
         if (_user.capital == 0) {
-            // +  to amount
             _user.capital = msg.value;
         }
 
@@ -87,12 +85,10 @@ contract Stake is Ownable, Multicall3, IStake, ReentrancyGuard {
         Pool memory _pool = _poolList[_pId];
 
         uint256 claim_amount = _claim(_pId, account);
-        // transfer Spent from this contract
-        uint256 SpentValue = convertTokenToSpent(claim_amount);
 
-        require(address(this).balance >= SpentValue, Errors.LOW_BALANCE_IN_CONTRACT);
+        require(address(this).balance >= claim_amount, Errors.LOW_BALANCE_IN_CONTRACT);
 
-        payable(account).transfer(SpentValue);
+        payable(account).transfer(claim_amount);
 
         _user.debt = 0;
         _user.stake_repeat_capital_debt = 0;
@@ -123,17 +119,15 @@ contract Stake is Ownable, Multicall3, IStake, ReentrancyGuard {
 
         total_amount = _user.debt + total_amount + _user.stake_repeat_capital_debt + _user.stake_repeat_reward_debt;
 
-        uint256 claim_mul_fees = total_amount * 2;
-        // fee to fisk
-        claim_mul_fees = claim_mul_fees / 1000;
+        // 0.3 % fees
+        uint256 claim_mul_fees = (total_amount * 3)/100;
+
         total_amount = total_amount - claim_mul_fees;
         _user.debt = total_amount;
 
         // update checkpoint
         _user.checkpoint = block.timestamp;
         _user.total_claimed = _user.total_claimed + total_amount;
-
-        // capital 0
         _user.capital = 0;
 
         return true;
@@ -161,18 +155,10 @@ contract Stake is Ownable, Multicall3, IStake, ReentrancyGuard {
         total = convertTokenToSpent(total);
 
         // converted to bnb
-        claimble_capital = convertTokenToSpent(
-            claimble_capital + (_user.stake_repeat_capital_debt)
-        ); // added sr-debt
-        claimble_reward = convertTokenToSpent(
-            claimble_reward + (_user.stake_repeat_reward_debt)
-        ); // added sr-debt
+        claimble_capital = convertTokenToSpent(claimble_capital + (_user.stake_repeat_capital_debt)); // added sr-debt
+        claimble_reward = convertTokenToSpent(claimble_reward + (_user.stake_repeat_reward_debt)); // added sr-debt
 
-        return (
-            total,
-            claimble_capital + (_user.stake_repeat_capital_debt),
-            claimble_reward + (_user.stake_repeat_reward_debt)
-        ); // added sr-debt for FE , calculations
+        return (total,claimble_capital + (_user.stake_repeat_capital_debt), claimble_reward + (_user.stake_repeat_reward_debt)); // added sr-debt for FE , calculations
     }
 
     function _claim(uint256 _pId, address account) private returns (uint256 total_claimable) {
