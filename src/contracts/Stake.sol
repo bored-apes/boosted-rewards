@@ -21,13 +21,9 @@ contract Stake is Ownable, Multicall3, IStake, ReentrancyGuard {
     mapping(address => uint256) public balances;
     mapping(uint256 => mapping(address => User)) private _userInfo; // user info for perticular pool
 
-    constructor(address _whitelist_address, address _lp) Ownable(msg.sender) {
-        whitelist_contract = _whitelist_address;
+    constructor() Ownable(msg.sender) {
 
-        _poolList.push(Pool(address(0), true, Time.TWO_YEAR, 50000, 0, 0));
-        _poolList.push(Pool(_lp, true, Time.TWO_YEAR, 50000, 0, 0));
-        _poolList.push(Pool(_lp, false, Time.TWO_YEAR, 21240, 0, 0));
-
+        _poolList.push(Pool(address(0), true, Time.ONE_YEAR, 50000, 0, 0));
         accessors.push(msg.sender);
     }
 
@@ -276,6 +272,16 @@ contract Stake is Ownable, Multicall3, IStake, ReentrancyGuard {
             )
         );
         return true;
+    }
+
+    function updatePoolApr(uint256 _pId, uint256 apr) external onlyOwner {
+        Pool storage _pool = _poolList[_pId];
+        _pool.apr = apr;
+    }
+
+    function updatePoolDuration(uint256 _pId, uint256 duration) external onlyOwner {
+        Pool storage _pool = _poolList[_pId];
+        _pool.duration = duration;
     }
 
     function addAccessors(address _acc) public onlyOwner returns (address[] memory) {
