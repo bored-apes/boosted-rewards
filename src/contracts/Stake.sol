@@ -3,9 +3,9 @@ pragma solidity ^0.8.0;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { Multicall3 } from "./libraries/Multicall3.sol";
-import { IStake } from "./interfaces/IStake.sol";
-import { Time } from "./libraries/Time.sol";
+import { Multicall3 } from "../libraries/Multicall3.sol";
+import { IStake } from "../interfaces/IStake.sol";
+import { Time } from "../libraries/Time.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 import "forge-std/console.sol";
