@@ -3,33 +3,29 @@ pragma solidity ^0.8.0;
 
 interface IStake {
 
-  event FarmEnable(address from, uint256 amountLp);
-  event FarmClaim(address account, uint256 amount);
-  event DirectAmount(address account, address ref, uint256 direct_amount, uint256 total_amount);
-  event DirectClaim(address account, uint256 fee_amount, uint256 final_amount);
+  event Stake(address from, uint256 amount);
+  event Claim(address account, uint256 amount);
 
   struct Pool {
-    address inputToken;
-    bool trigger;
     uint256 duration;
     uint256 apr;
-    uint256 tvl_usd;
-    uint256 total_claimed;
+    uint256 claim_delay;
+    uint256 max_booster;
+
   }
   struct User {
+    uint256 startpoint; // in timestamp
     uint256 checkpoint; // check point in timestamp
-    uint256 endpoint; // end of this / latest depoist reward duration
-    uint256 capital; // usd amout of asset
-    uint256 debt;
-    uint256 lockedTill;
-    uint256 capital_per_day;
+    uint256 endpoint; // end of this / latest deposit reward duration
+    uint256 duration; // in timestamp
+    uint256 last_claimed_at;
+    uint256 reward_booster;
+    uint256 capital; 
     uint256 max_reward;
     uint256 reward_per_day;
+    uint256 reward_per_second;
     uint256 total_claimed;
-    uint256 hold;
-    uint256 stake_repeat_capital_debt;
-    uint256 stake_repeat_reward_debt;
-    uint256 stake_lock;
+    uint256 left_reward;
     bool isDisabled;
   }
 

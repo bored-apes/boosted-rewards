@@ -20,6 +20,7 @@ library Errors {
   // ********************************************* LOW BALANCE && CALCULATION *********************************************
 
   string public constant LOW_BNB_BALANCE = "LOW_BNB_BALANCE";
+  string public constant LOW_TOKEN = "LOW_TOKEN_IN_CONTRACT";
   string public constant LOW_ALLOWANCE = "LOW_ALLOWANCE";
   string public constant INSUFFICIENT_AMOUNT = "INSUFFICIENT_AMOUNT";
   string public constant AMOUNT_ZERO = "AMOUNT_SHOULD_BE_GREATER_THAN_ZERO";
@@ -31,6 +32,6 @@ library Errors {
   string public constant POOL_NOT_CREATED = "POOL_IS_NOT_CREATED_YET";
   string public constant USER_IS_DISABLED = "USER_IS_DISABLED";
   string public constant USER_IS_LOCKED = "USER_IS_LOCKED_YET";
-
+  string public constant USER_ALREADY_EXISTS = "USER_ALREADY_EXISTS";
 
 }
