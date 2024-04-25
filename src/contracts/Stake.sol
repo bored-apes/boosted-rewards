@@ -56,7 +56,7 @@ contract Stake is Ownable, Multicall3, IStake, ReentrancyGuard {
         _user.reward_per_second = rps;
         _user.checkpoint = block.timestamp;
         _user.endpoint = _stakeDuration + (block.timestamp);
-
+        _user.duration = _stakeDuration;
         emit Stake(msg.sender, msg.value);
 
         return true;
@@ -76,8 +76,9 @@ contract Stake is Ownable, Multicall3, IStake, ReentrancyGuard {
         payable(account).transfer(stake_claim_amount);
         _user.checkpoint = block.timestamp;
         _user.total_claimed += stake_claim_amount;
-        _user.left_reward -= stake_claim_amount;
-        if(_user.left_reward == 0){
+        if(_user.left_reward >= stake_claim_amount) _user.left_reward -= stake_claim_amount;
+        else _user.left_reward = 0;
+        if(block.timestamp > _user.endpoint){
             _user.capital = 0;
         }
         emit Claim(account, stake_claim_amount);
@@ -98,16 +99,28 @@ contract Stake is Ownable, Multicall3, IStake, ReentrancyGuard {
     function checkClaimable(uint256 _pId, address account) public view returns (uint256, uint256){
         User memory _user = _userInfo[_pId][account];
         Pool memory _pool = _poolList[_pId];
-        uint256 total_time_passed = block.timestamp - _user.checkpoint;
+        uint256 total_time_passed;
+        require(_user.capital != 0, Errors.NO_STAKE);
+
+        if(block.timestamp < _user.endpoint){
+            total_time_passed = block.timestamp - _user.checkpoint;
+        }
+        else{
+            total_time_passed = _user.endpoint - _user.checkpoint;
+        }
         uint256 claimable_reward = total_time_passed * _user.reward_per_second;
         return (claimable_reward, total_time_passed);
     }
 
     function _calcStakeReward(uint256 _user_capital, uint256 _apr, uint256 _duration, uint256 reward_booster) private view returns (uint256, uint256, uint256) {
         uint256 reward_per_year = (_apr*_user_capital)/(_divider * 100);
-        uint256 user_stake_reward = _user_capital + (reward_booster * _duration * reward_per_year / Time.ONE_YEAR);
-        uint256 reward_per_day = user_stake_reward/(_duration/86400);
-        uint256 reward_per_second = reward_per_day/24/60/60;
+        console.log("RPY : ", reward_per_year);
+        uint256 user_stake_reward = _user_capital + (reward_booster * _duration * reward_per_year / _divider / Time.ONE_YEAR);
+        console.log("User Total reward : ",user_stake_reward);
+        uint256 reward_per_day = user_stake_reward/(_duration/Time.ONE_DAY);
+        console.log("RPD : ", reward_per_day);
+        uint256 reward_per_second = reward_per_day/Time.ONE_DAY;
+        console.log("RPS : ", reward_per_second);
         return (user_stake_reward, reward_per_day, reward_per_second);
     }
 

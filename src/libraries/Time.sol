@@ -5,8 +5,8 @@ library Time {
   uint256 public constant ONE_SECOND = 1;
   uint256 public constant ONE_MINUTE = 60 * ONE_SECOND;
   uint256 public constant ONE_HOUR = 60 * ONE_MINUTE;
-  uint256 public constant ONE_DAY = 24 * ONE_HOUR;
-  // uint256 public constant ONE_DAY = ONE_SECOND;
+  // uint256 public constant ONE_DAY = 24 * ONE_HOUR;
+  uint256 public constant ONE_DAY = ONE_SECOND;
   uint256 public constant ONE_WEEK = 7 * ONE_DAY;
   uint256 public constant ONE_MONTH_OF_30 = 30 * ONE_DAY;
   uint256 public constant ONE_MONTH_OF_31 = 31 * ONE_DAY;

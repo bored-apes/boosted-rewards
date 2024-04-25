@@ -33,5 +33,5 @@ library Errors {
   string public constant USER_IS_DISABLED = "USER_IS_DISABLED";
   string public constant USER_IS_LOCKED = "USER_IS_LOCKED_YET";
   string public constant USER_ALREADY_EXISTS = "USER_ALREADY_EXISTS";
-
+  string public constant NO_STAKE = 'STAKE_ENDED_OR_NOT_STARTED_YET';
 }
