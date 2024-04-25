@@ -42,11 +42,11 @@ contract Stake is Ownable, Multicall3, IStake, ReentrancyGuard {
 
         // check if alredy staked in this pool
         User storage _user = _userInfo[_pId][msg.sender];
-        require(_user.capital == 0, Erros.USER_ALREADY_EXISTS);
+        require(_user.capital == 0, Errors.USER_ALREADY_EXISTS);
         _user.capital = msg.value;
-        _user.reward_booster = (_pool.max_booster * stakeDuration)/_pool.duration;
+        _user.reward_booster = (_pool.max_booster * _stakeDuration)/_pool.duration;
 
-        (uint256 rpy, uint256 rpd, uint256 rps) = _calcStakeReward(_user.capital, _pool.apr, stakeDuration);
+        (uint256 rpy, uint256 rpd, uint256 rps) = _calcStakeReward(_user.capital, _pool.apr, _stakeDuration);
 
         _user.max_reward = rpy + (rpy*_user.reward_booster);
         _user.reward_per_day = rpd;
@@ -54,8 +54,6 @@ contract Stake is Ownable, Multicall3, IStake, ReentrancyGuard {
         _user.checkpoint = block.timestamp;
         _user.endpoint = _stakeDuration + (block.timestamp);
 
-        _user.stake_lock = block.timestamp + Time.ONE_WEEK;
-        _user.lockedTill = block.timestamp + Time.ONE_DAY;
         emit Stake(msg.sender, msg.value);
 
         return true;
@@ -66,12 +64,11 @@ contract Stake is Ownable, Multicall3, IStake, ReentrancyGuard {
 
         User storage _user = _userInfo[_pId][account];
         require(!_user.isDisabled, Errors.USER_IS_DISABLED);
-        require(_user.lockedTill < block.timestamp, Errors.USER_IS_LOCKED);
 
         Pool memory _pool = _poolList[_pId];
 
         (uint256 stake_claim_amount, uint256 total_time_passed) = checkClaimable(_pId, account);
-        require(total_time_passed > _pool.claim_delay, Erros.NOT_CLAIMABLE_YET);
+        require(total_time_passed > _pool.claim_delay, Errors.NOT_CLAIMABLE_YET);
 
         uint256 current_claim = stake_claim_amount * _user.reward_booster;
 
@@ -81,7 +78,7 @@ contract Stake is Ownable, Multicall3, IStake, ReentrancyGuard {
         _user.last_claimed_at = block.timestamp;
         _user.total_claimed += current_claim;
         _user.left_reward -= current_claim;
-        emit FarmClaim(account, current_claim);
+        emit Claim(account, current_claim);
 
         return true;
     }
@@ -125,12 +122,10 @@ contract Stake is Ownable, Multicall3, IStake, ReentrancyGuard {
     function createPool(Pool calldata pooldatas) external onlyAccessors returns (bool) {
         _poolList.push(
             Pool(
-                pooldatas.inputToken,
-                pooldatas.trigger,
                 pooldatas.duration,
                 pooldatas.apr,
-                pooldatas.tvl_usd,
-                pooldatas.total_claimed
+                pooldatas.claim_delay,
+                pooldatas.max_booster
             )
         );
         return true;
