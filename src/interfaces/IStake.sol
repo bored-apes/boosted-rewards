@@ -29,8 +29,7 @@ interface IStake {
     bool isDisabled;
   }
 
-  function stake(uint256 _pId) external payable returns (bool);
+  function stake(uint256 _pId, uint256 _stakeDuration) external payable returns (bool);
   function claim(uint256 _pId) external returns (bool);
-  function unstake(uint256 _pId) external returns (bool);
 
 }
