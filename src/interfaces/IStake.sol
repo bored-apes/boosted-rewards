@@ -18,7 +18,6 @@ interface IStake {
     uint256 checkpoint; // check point in timestamp
     uint256 endpoint; // end of this / latest deposit reward duration
     uint256 duration; // in timestamp
-    uint256 last_claimed_at;
     uint256 reward_booster;
     uint256 capital; 
     uint256 max_reward;

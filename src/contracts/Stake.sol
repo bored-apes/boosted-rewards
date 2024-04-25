@@ -17,12 +17,13 @@ contract Stake is Ownable, Multicall3, IStake, ReentrancyGuard {
     uint256 private _total_claimed_tokens;
     address[] public accessors;
     Pool[] private _poolList;
+    uint256 constant _divider = 1000;
 
     mapping(address => uint256) public balances;
     mapping(uint256 => mapping(address => User)) private _userInfo; // user info for perticular pool
 
     constructor() Ownable(msg.sender) {
-        _poolList.push(Pool(Time.ONE_YEAR, 50000, Time.ONE_WEEK, 5));
+        _poolList.push(Pool(Time.ONE_YEAR, 50000, Time.ONE_WEEK, 5000));
         accessors.push(msg.sender);
     }
 
@@ -45,10 +46,12 @@ contract Stake is Ownable, Multicall3, IStake, ReentrancyGuard {
         require(_user.capital == 0, Errors.USER_ALREADY_EXISTS);
         _user.capital = msg.value;
         _user.reward_booster = (_pool.max_booster * _stakeDuration)/_pool.duration;
+        if(_user.reward_booster > 5000) _user.reward_booster = 5000;
+        console.log("Reward Booster : ", _user.reward_booster);
+        (uint256 total_reward, uint256 rpd, uint256 rps) = _calcStakeReward(_user.capital, _pool.apr, _stakeDuration, _user.reward_booster);
 
-        (uint256 rpy, uint256 rpd, uint256 rps) = _calcStakeReward(_user.capital, _pool.apr, _stakeDuration);
-
-        _user.max_reward = rpy + (rpy*_user.reward_booster);
+        _user.max_reward = total_reward;
+        _user.left_reward = total_reward;
         _user.reward_per_day = rpd;
         _user.reward_per_second = rps;
         _user.checkpoint = block.timestamp;
@@ -69,16 +72,15 @@ contract Stake is Ownable, Multicall3, IStake, ReentrancyGuard {
 
         (uint256 stake_claim_amount, uint256 total_time_passed) = checkClaimable(_pId, account);
         require(total_time_passed > _pool.claim_delay, Errors.NOT_CLAIMABLE_YET);
-
-        uint256 current_claim = stake_claim_amount * _user.reward_booster;
-
-        require(address(this).balance >= current_claim, Errors.LOW_BALANCE_IN_CONTRACT);
-
-        payable(account).transfer(current_claim);
-        _user.last_claimed_at = block.timestamp;
-        _user.total_claimed += current_claim;
-        _user.left_reward -= current_claim;
-        emit Claim(account, current_claim);
+        require(address(this).balance >= stake_claim_amount, Errors.LOW_BALANCE_IN_CONTRACT);
+        payable(account).transfer(stake_claim_amount);
+        _user.checkpoint = block.timestamp;
+        _user.total_claimed += stake_claim_amount;
+        _user.left_reward -= stake_claim_amount;
+        if(_user.left_reward == 0){
+            _user.capital = 0;
+        }
+        emit Claim(account, stake_claim_amount);
 
         return true;
     }
@@ -96,16 +98,17 @@ contract Stake is Ownable, Multicall3, IStake, ReentrancyGuard {
     function checkClaimable(uint256 _pId, address account) public view returns (uint256, uint256){
         User memory _user = _userInfo[_pId][account];
         Pool memory _pool = _poolList[_pId];
-        uint256 total_time_passed = block.timestamp - _user.last_claimed_at;
+        uint256 total_time_passed = block.timestamp - _user.checkpoint;
         uint256 claimable_reward = total_time_passed * _user.reward_per_second;
         return (claimable_reward, total_time_passed);
     }
 
-    function _calcStakeReward(uint256 _user_capital, uint256 _apr, uint256 _duration) private pure returns (uint256, uint256, uint256) {
-        uint256 reward_per_year = _user_capital + (_apr*_user_capital)/100;
-        uint256 reward_per_day = reward_per_year/_duration;
+    function _calcStakeReward(uint256 _user_capital, uint256 _apr, uint256 _duration, uint256 reward_booster) private view returns (uint256, uint256, uint256) {
+        uint256 reward_per_year = (_apr*_user_capital)/(_divider * 100);
+        uint256 user_stake_reward = _user_capital + (reward_booster * _duration * reward_per_year / Time.ONE_YEAR);
+        uint256 reward_per_day = user_stake_reward/(_duration/86400);
         uint256 reward_per_second = reward_per_day/24/60/60;
-        return (reward_per_year, reward_per_day, reward_per_second);
+        return (user_stake_reward, reward_per_day, reward_per_second);
     }
 
     /********************************************** ACCESSORS & OWNERS ********************************************** */
