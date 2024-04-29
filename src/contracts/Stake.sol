@@ -38,6 +38,7 @@ contract Stake is Ownable, Multicall3, IStake, ReentrancyGuard {
 
     function stake(uint256 _pId, uint256 _stakeDuration) external payable override returns (bool) {
         require(msg.value > 0, Errors.AMOUNT_ZERO);
+
         require(_poolList.length != 0, Errors.POOL_NOT_CREATED);
         Pool storage _pool = _poolList[_pId];
 
@@ -71,6 +72,8 @@ contract Stake is Ownable, Multicall3, IStake, ReentrancyGuard {
         Pool memory _pool = _poolList[_pId];
 
         (uint256 stake_claim_amount, uint256 total_time_passed) = checkClaimable(_pId, account);
+        console.log("Stake Claim Amount", stake_claim_amount);
+        console.log("total Time Passed", total_time_passed);
         require(total_time_passed > _pool.claim_delay, Errors.NOT_CLAIMABLE_YET);
         require(address(this).balance >= stake_claim_amount, Errors.LOW_BALANCE_IN_CONTRACT);
         payable(account).transfer(stake_claim_amount);
@@ -101,7 +104,8 @@ contract Stake is Ownable, Multicall3, IStake, ReentrancyGuard {
         Pool memory _pool = _poolList[_pId];
         uint256 total_time_passed;
         require(_user.capital != 0, Errors.NO_STAKE);
-
+        console.log("Current time", block.timestamp);
+        console.log("Checkpoint : ", _user.checkpoint);
         if(block.timestamp < _user.endpoint){
             total_time_passed = block.timestamp - _user.checkpoint;
         }
