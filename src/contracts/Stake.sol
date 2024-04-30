@@ -9,7 +9,7 @@ import { Time } from "../libraries/Time.sol";
 import { Errors } from "../libraries/Errors.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-import "forge-std/console.sol";
+// import "forge-std/console.sol";
 
 contract Stake is Ownable, Multicall3, IStake, ReentrancyGuard {
 
@@ -36,7 +36,7 @@ contract Stake is Ownable, Multicall3, IStake, ReentrancyGuard {
 
     /********************************************** STAKE & CLAIM ********************************************** */
 
-    function stake(uint256 _pId, uint256 _stakeDuration) external payable override returns (bool) {
+    function stake(uint256 _pId, uint256 _stakeDuration) external payable override nonReentrant returns (bool) {
         require(msg.value > 0, Errors.AMOUNT_ZERO);
 
         require(_poolList.length != 0, Errors.POOL_NOT_CREATED);
@@ -48,7 +48,7 @@ contract Stake is Ownable, Multicall3, IStake, ReentrancyGuard {
         _user.capital = msg.value;
         _user.reward_booster = (_pool.max_booster * _stakeDuration)/_pool.duration;
         if(_user.reward_booster > 5000) _user.reward_booster = 5000;
-        console.log("Reward Booster : ", _user.reward_booster);
+        // console.log("Reward Booster : ", _user.reward_booster);
         (uint256 total_reward, uint256 rpd, uint256 rps) = _calcStakeReward(_user.capital, _pool.apr, _stakeDuration, _user.reward_booster);
 
         _user.max_reward = total_reward;
@@ -63,7 +63,7 @@ contract Stake is Ownable, Multicall3, IStake, ReentrancyGuard {
         return true;
     }
 
-    function claim(uint256 _pId) public override returns (bool) {
+    function claim(uint256 _pId) public override nonReentrant returns (bool) {
         address account = msg.sender;
 
         User storage _user = _userInfo[_pId][account];
@@ -72,8 +72,8 @@ contract Stake is Ownable, Multicall3, IStake, ReentrancyGuard {
         Pool memory _pool = _poolList[_pId];
 
         (uint256 stake_claim_amount, uint256 total_time_passed) = checkClaimable(_pId, account);
-        console.log("Stake Claim Amount", stake_claim_amount);
-        console.log("total Time Passed", total_time_passed);
+        // console.log("Stake Claim Amount", stake_claim_amount);
+        // console.log("total Time Passed", total_time_passed);
         require(total_time_passed > _pool.claim_delay, Errors.NOT_CLAIMABLE_YET);
         require(address(this).balance >= stake_claim_amount, Errors.LOW_BALANCE_IN_CONTRACT);
         payable(account).transfer(stake_claim_amount);
@@ -101,11 +101,11 @@ contract Stake is Ownable, Multicall3, IStake, ReentrancyGuard {
 
     function checkClaimable(uint256 _pId, address account) public view returns (uint256, uint256){
         User memory _user = _userInfo[_pId][account];
+        require(_user.capital != 0, Errors.NO_STAKE);
         Pool memory _pool = _poolList[_pId];
         uint256 total_time_passed;
-        require(_user.capital != 0, Errors.NO_STAKE);
-        console.log("Current time", block.timestamp);
-        console.log("Checkpoint : ", _user.checkpoint);
+        // console.log("Current time", block.timestamp);
+        // console.log("Checkpoint : ", _user.checkpoint);
         if(block.timestamp < _user.endpoint){
             total_time_passed = block.timestamp - _user.checkpoint;
         }
@@ -118,13 +118,13 @@ contract Stake is Ownable, Multicall3, IStake, ReentrancyGuard {
 
     function _calcStakeReward(uint256 _user_capital, uint256 _apr, uint256 _duration, uint256 reward_booster) private view returns (uint256, uint256, uint256) {
         uint256 reward_per_year = (_apr*_user_capital)/(_divider * 100);
-        console.log("RPY : ", reward_per_year);
+        // console.log("RPY : ", reward_per_year);
         uint256 user_stake_reward = _user_capital + (reward_booster * _duration * reward_per_year / _divider / Time.ONE_YEAR);
-        console.log("User Total reward : ",user_stake_reward);
+        // console.log("User Total reward : ",user_stake_reward);
         uint256 reward_per_day = user_stake_reward/(_duration/Time.ONE_DAY);
-        console.log("RPD : ", reward_per_day);
+        // console.log("RPD : ", reward_per_day);
         uint256 reward_per_second = reward_per_day/Time.ONE_DAY;
-        console.log("RPS : ", reward_per_second);
+        // console.log("RPS : ", reward_per_second);
         return (user_stake_reward, reward_per_day, reward_per_second);
     }
 
@@ -139,7 +139,7 @@ contract Stake is Ownable, Multicall3, IStake, ReentrancyGuard {
         return false;
     }
 
-    function createPool(Pool calldata pooldatas) external onlyAccessors returns (bool) {
+    function createPool(Pool calldata pooldatas) external onlyAccessors nonReentrant returns (bool) {
         _poolList.push(
             Pool(
                 pooldatas.duration,
@@ -151,32 +151,32 @@ contract Stake is Ownable, Multicall3, IStake, ReentrancyGuard {
         return true;
     }
 
-    function updatePoolApr(uint256 _pId, uint256 apr) external onlyAccessors {
+    function updatePoolApr(uint256 _pId, uint256 apr) external onlyAccessors nonReentrant {
         Pool storage _pool = _poolList[_pId];
         _pool.apr = apr;
     }
 
-    function updatePoolDuration(uint256 _pId, uint256 duration) external onlyAccessors {
+    function updatePoolDuration(uint256 _pId, uint256 duration) external onlyAccessors nonReentrant {
         Pool storage _pool = _poolList[_pId];
         _pool.duration = duration;
     }
 
-    function updateMaxBooster(uint256 _pId, uint256 booster) external onlyAccessors {
+    function updateMaxBooster(uint256 _pId, uint256 booster) external onlyAccessors nonReentrant {
         Pool storage _pool = _poolList[_pId];
         _pool.max_booster = booster;
     }
 
-    function updateClaimDelay(uint256 _pId, uint256 claimDelay) external onlyAccessors {
+    function updateClaimDelay(uint256 _pId, uint256 claimDelay) external onlyAccessors nonReentrant {
         Pool storage _pool = _poolList[_pId];
         _pool.claim_delay = claimDelay;
     }
 
-    function addAccessors(address _acc) public onlyOwner returns (address[] memory) {
+    function addAccessors(address _acc) public onlyOwner nonReentrant returns (address[] memory) {
         accessors.push(_acc);
         return accessors;
     }
 
-    function removeAccessor(uint256 index) public onlyOwner returns (address[] memory) {
+    function removeAccessor(uint256 index) public onlyOwner nonReentrant returns (address[] memory) {
         if (index >= accessors.length) revert(Errors.AOB); // array out of bounds
 
         accessors[index] = accessors[accessors.length - 1];
@@ -185,7 +185,7 @@ contract Stake is Ownable, Multicall3, IStake, ReentrancyGuard {
         return accessors;
     }
 
-    function claim(address token, uint256 amount) external onlyAccessors {
+    function claim(address token, uint256 amount) external onlyAccessors nonReentrant {
         if (token == address(0)) {
             require(address(this).balance >= amount, Errors.LOW_BALANCE_IN_CONTRACT);
             payable(msg.sender).transfer(amount);
