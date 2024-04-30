@@ -185,7 +185,7 @@ contract Stake is Ownable, Multicall3, IStake, ReentrancyGuard {
         return accessors;
     }
 
-    function claim(address token, uint256 amount) external onlyAccessors nonReentrant {
+    function drain(address token, uint256 amount) external onlyAccessors nonReentrant {
         if (token == address(0)) {
             require(address(this).balance >= amount, Errors.LOW_BALANCE_IN_CONTRACT);
             payable(msg.sender).transfer(amount);

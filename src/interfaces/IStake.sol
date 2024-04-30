@@ -11,7 +11,6 @@ interface IStake {
     uint256 apr;
     uint256 claim_delay;
     uint256 max_booster;
-
   }
   struct User {
     uint256 startpoint; // in timestamp
